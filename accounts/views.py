@@ -20,6 +20,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.shortcuts import redirect
+from urllib.parse import urlencode
 
 # Create your views here.
 
@@ -98,15 +100,17 @@ class ChangePasswordView(generics.UpdateAPIView):
         serializer = self.get_serializer(data=request.data)
         
         if serializer.is_valid():
+            validated_data = serializer.validated_data
+
             # Check old password
-            if not self.object.check_password(serializer.data.get("old_password")):
+            if not self.object.check_password(validated_data.get("old_password")):
                 return Response(
                     {"old_password": ["Wrong password."]}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
             # Set new password
-            self.object.set_password(serializer.data.get("new_password"))
+            self.object.set_password(validated_data.get("new_password"))
             self.object.save()
             return Response(
                 {'success': 'Password changed successfully'}, 
@@ -123,11 +127,31 @@ class UserDetailView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+    def update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return super().update(request, *args, **kwargs)
+
 class RefreshTokenView(TokenRefreshView):
     """
     Custom token refresh view that handles JWT token refresh.
     """
     permission_classes = (AllowAny,)
+
+
+class OAuthSuccessView(APIView):
+    """
+    Endpoint de puente para OAuth2.
+    Se usa luego del login social para emitir JWT y redirigir al frontend.
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        refresh = RefreshToken.for_user(request.user)
+        query = urlencode({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        })
+        return redirect(f"{settings.FRONTEND_URL}/?{query}")
 
 
 class PasswordResetRequestView(APIView):

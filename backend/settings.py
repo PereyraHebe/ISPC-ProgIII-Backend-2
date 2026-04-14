@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'dj_rest_auth',
     'dj_rest_auth.registration',
     'allauth',
@@ -68,6 +69,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+)
+
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:4200', cast=Csv())
@@ -209,6 +216,11 @@ SIMPLE_JWT = {
 # OAuth2 Providers
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
+        'APP': {
+            'client_id': config('GOOGLE_OAUTH2_KEY', default=''),
+            'secret': config('GOOGLE_OAUTH2_SECRET', default=''),
+            'key': '',
+        },
         'SCOPE': [
             'profile',
             'email',
@@ -220,6 +232,11 @@ SOCIALACCOUNT_PROVIDERS = {
         'VERSION': 'v2',
     },
     'github': {
+        'APP': {
+            'client_id': config('GITHUB_APP_ID', default=''),
+            'secret': config('GITHUB_SECRET', default=''),
+            'key': '',
+        },
         'SCOPE': [
             'user',
             'repo',
@@ -232,6 +249,8 @@ SOCIALACCOUNT_PROVIDERS = {
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'optional'
 SOCIALACCOUNT_EMAIL_REQUIRED = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
+LOGIN_REDIRECT_URL = '/api/oauth/success/'
 
 # Frontend URL for OAuth redirects
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:4200')

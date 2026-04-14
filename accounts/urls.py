@@ -9,7 +9,8 @@ from .views import (
     RefreshTokenView,
     PasswordResetRequestView,
     VerifyOTPView,
-    ConfirmPasswordResetView
+    ConfirmPasswordResetView,
+    OAuthSuccessView,
 )
 
 urlpatterns = [
@@ -30,6 +31,7 @@ urlpatterns = [
     path('password-reset-request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password-reset-verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),
     path('password-reset-confirm/', ConfirmPasswordResetView.as_view(), name='confirm_password_reset'),
+    path('oauth/success/', OAuthSuccessView.as_view(), name='oauth_success'),
     
     # dj-rest-auth endpoints (optional, for additional OAuth support)
     path('auth/', include('dj_rest_auth.urls')),
