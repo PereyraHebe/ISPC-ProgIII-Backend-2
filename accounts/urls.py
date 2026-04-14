@@ -6,7 +6,10 @@ from .views import (
     LogoutView, 
     ChangePasswordView, 
     UserDetailView,
-    RefreshTokenView
+    RefreshTokenView,
+    PasswordResetRequestView,
+    VerifyOTPView,
+    ConfirmPasswordResetView
 )
 
 urlpatterns = [
@@ -22,6 +25,11 @@ urlpatterns = [
     # User endpoints
     path('user/', UserDetailView.as_view(), name='user_detail'),
     path('user/change-password/', ChangePasswordView.as_view(), name='change_password'),
+    
+    # Password reset endpoints
+    path('password-reset-request/', PasswordResetRequestView.as_view(), name='password_reset_request'),
+    path('password-reset-verify-otp/', VerifyOTPView.as_view(), name='verify_otp'),
+    path('password-reset-confirm/', ConfirmPasswordResetView.as_view(), name='confirm_password_reset'),
     
     # dj-rest-auth endpoints (optional, for additional OAuth support)
     path('auth/', include('dj_rest_auth.urls')),

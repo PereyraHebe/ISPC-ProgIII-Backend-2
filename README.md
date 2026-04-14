@@ -57,6 +57,9 @@ Servidor en: **http://localhost:8000**
 | GET | `/api/user/` | Detalles usuario |
 | PUT | `/api/user/change-password/` | Cambiar contraseña |
 | POST | `/api/token/refresh/` | Refrescar token |
+| POST | `/api/password-reset-request/` | Solicitar OTP para reset |
+| POST | `/api/password-reset-verify-otp/` | Verificar OTP |
+| POST | `/api/password-reset-confirm/` | Confirmar reset y actualizar contraseña |
 
 ## Ejemplo Rapido
 
@@ -86,6 +89,32 @@ curl -X POST http://localhost:8000/api/login/ \
 ```bash
 curl -X GET http://localhost:8000/api/user/ \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+**Reset Contraseña:**
+```bash
+# 1. Solicitar OTP (se envía al email)
+curl -X POST http://localhost:8000/api/password-reset-request/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+
+# 2. Verificar OTP (opcional)
+curl -X POST http://localhost:8000/api/password-reset-verify-otp/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "otp": "123456"
+  }'
+
+# 3. Confirmar reset
+curl -X POST http://localhost:8000/api/password-reset-confirm/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "otp": "123456",
+    "new_password": "NewPassword123!",
+    "new_password2": "NewPassword123!"
+  }'
 ```
 
 ## Configuracion

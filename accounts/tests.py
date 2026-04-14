@@ -316,3 +316,156 @@ class TokenRefreshTestCase(APITestCase):
         response = self.client.post(self.token_refresh_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+
+class PasswordResetRequestTestCase(APITestCase):
+    """Tests para endpoint de solicitud de reset de contraseña"""
+
+    def setUp(self):
+        self.url = reverse('password_reset_request')
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='TestPassword123!'
+        )
+
+    def test_password_reset_request_success(self):
+        """Test: Solicitar reset exitosamente"""
+        data = {'email': 'test@example.com'}
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('message', response.data)
+
+    def test_password_reset_request_nonexistent_email(self):
+        """Test: Email no existe (seguridad)"""
+        data = {'email': 'nonexistent@example.com'}
+        response = self.client.post(self.url, data, format='json')
+        
+        # No revela si el email existe o no
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_password_reset_request_invalid_email(self):
+        """Test: Email inválido"""
+        data = {'email': 'invalid-email'}
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class VerifyOTPTestCase(APITestCase):
+    """Tests para endpoint de verificación de OTP"""
+
+    def setUp(self):
+        self.url = reverse('verify_otp')
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='TestPassword123!'
+        )
+        
+        # Crear OTP válido
+        from .models import PasswordResetOTP
+        self.otp_obj = PasswordResetOTP.create_otp(self.user)
+
+    def test_verify_otp_valid(self):
+        """Test: Verificar OTP válido"""
+        data = {
+            'email': 'test@example.com',
+            'otp': self.otp_obj.otp
+        }
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['valid'])
+
+    def test_verify_otp_invalid(self):
+        """Test: OTP inválido"""
+        data = {
+            'email': 'test@example.com',
+            'otp': '000000'
+        }
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_verify_otp_used(self):
+        """Test: OTP ya fue usado"""
+        self.otp_obj.mark_as_used()
+        
+        data = {
+            'email': 'test@example.com',
+            'otp': self.otp_obj.otp
+        }
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class ConfirmPasswordResetTestCase(APITestCase):
+    """Tests para endpoint de confirmación de reset de contraseña"""
+
+    def setUp(self):
+        self.url = reverse('confirm_password_reset')
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='OldPassword123!'
+        )
+        
+        # Crear OTP válido
+        from .models import PasswordResetOTP
+        self.otp_obj = PasswordResetOTP.create_otp(self.user)
+
+    def test_confirm_password_reset_success(self):
+        """Test: Reset de contraseña exitoso"""
+        data = {
+            'email': 'test@example.com',
+            'otp': self.otp_obj.otp,
+            'new_password': 'NewPassword123!',
+            'new_password2': 'NewPassword123!'
+        }
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verificar que la contraseña cambió
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('NewPassword123!'))
+
+    def test_confirm_password_reset_invalid_otp(self):
+        """Test: OTP inválido"""
+        data = {
+            'email': 'test@example.com',
+            'otp': '000000',
+            'new_password': 'NewPassword123!',
+            'new_password2': 'NewPassword123!'
+        }
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_confirm_password_reset_password_mismatch(self):
+        """Test: Contraseñas no coinciden"""
+        data = {
+            'email': 'test@example.com',
+            'otp': self.otp_obj.otp,
+            'new_password': 'NewPassword123!',
+            'new_password2': 'DifferentPassword123!'
+        }
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_confirm_password_reset_weak_password(self):
+        """Test: Contraseña débil"""
+        data = {
+            'email': 'test@example.com',
+            'otp': self.otp_obj.otp,
+            'new_password': 'weak',
+            'new_password2': 'weak'
+        }
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
