@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import UserProfile, PasswordResetOTP
 from django.contrib.auth.password_validation import validate_password
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -90,4 +91,22 @@ class ConfirmPasswordResetSerializer(serializers.Serializer):
             raise serializers.ValidationError({
                 "new_password": "Password fields didn't match."
             })
+        return data
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        token['username'] = user.username
+        
+        role = user.groups.first().name if user.groups.exists() else 'No Role'
+        token['role'] = role
+
+        return token
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['username'] = self.user.username
+        data['role'] = self.user.groups.first().name if self.user.groups.exists() else 'No Role'
         return data

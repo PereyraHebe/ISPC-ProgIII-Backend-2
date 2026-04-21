@@ -6,14 +6,15 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
 from .serializers import (
     RegisterSerializer, 
     UserSerializer, 
     ChangePasswordSerializer,
     PasswordResetRequestSerializer,
     VerifyOTPSerializer,
-    ConfirmPasswordResetSerializer
+    ConfirmPasswordResetSerializer,
+    CustomTokenObtainPairSerializer
 )
 from .models import PasswordResetOTP
 from django.core.mail import send_mail
@@ -41,7 +42,7 @@ class RegisterView(generics.CreateAPIView):
             'user': UserSerializer(user).data
         }, status=status.HTTP_201_CREATED)
 
-class LoginView(APIView):
+"""class LoginView(APIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
@@ -67,8 +68,10 @@ class LoginView(APIView):
         return Response(
             {'error': 'Invalid username or password'}, 
             status=status.HTTP_401_UNAUTHORIZED
-        )
-
+        )"""
+class LoginView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+    permission_classes = (AllowAny,)
 class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
